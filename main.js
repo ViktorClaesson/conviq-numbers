@@ -22,7 +22,7 @@ function rate(number) {
 }
 
 // 1594743690690
-async function main() {
+async function fetcher(runs) {
   for (let i = 0; i < runs; i++) {
     console.log("Starting fetch number", i);
     fetch(
@@ -48,8 +48,8 @@ async function main() {
     )
       .then((blob) => blob.json())
       .then((json) => json.response)
-      .then((arr) => (globalArr = [...globalArr, ...arr]))
-      .catch((err) => {
+      .then((arr) => numbers.push(...arr))
+      .catch(() => {
         runs_alive--;
         console.log(`Another one bites the dust ${runs_alive} left.`);
       });
@@ -75,13 +75,13 @@ function compare(a, b) {
   return value(a) - value(b);
 }
 
-function poll() {
+function poll(startTime) {
   console.log("polling... (" + (Date.now() - startTime) / 1000 + " s)");
 
-  if (globalArr.length == runs_alive * 5) {
+  if (numbers.length == runs_alive * 5) {
     console.log("Done!");
 
-    const res = globalArr
+    const res = numbers
       .map((nbr) => rate(nbr))
       .sort(compare)
       .map((o) => ({
@@ -111,14 +111,19 @@ function poll() {
       rl.close();
     });
   } else {
-    setTimeout(poll, 1000);
+    setTimeout(() => poll(startTime), 1000);
   }
 }
 
-const runs = 5;
-const startTime = Date.now();
-var globalArr = [];
-var runs_alive = runs;
+var runs_alive;
+var numbers = [];
 
-main();
-setTimeout(poll, 1000);
+rl.question("Runs (number): ", async function (runsString) {
+  const runs = parseInt(runsString) ? parseInt(runsString) : 5;
+  const startTime = Date.now();
+
+  runs_alive = runs;
+
+  await fetcher(runs);
+  setTimeout(() => poll(startTime), 1000);
+});

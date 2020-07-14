@@ -86,25 +86,24 @@ function poll(runs, startTime, pollingTime) {
   if (numbers.length == (runs - runs_dead) * 5) {
     console.log("Done!");
 
-    const res = numbers
-      .map((nbr) => rate(nbr))
-      .sort(compare)
-      .map((o) => ({
-        n: o.number,
-        l6: o.last6,
-        l8: o.last8,
-        b69: (o.noice ? 1 : 0) + (o.blaze ? 1 : 0),
-        s: value(o),
-      }));
+    const original = numbers.map((nbr) => rate(nbr)).sort(compare);
 
-    console.log(res);
+    const logging = original.map((o) => ({
+      n: o.number,
+      l6: o.last6,
+      l8: o.last8,
+      BoN: (o.noice ? 1 : 0) + (o.blaze ? 1 : 0),
+      s: value(o),
+    }));
+
+    console.log(logging);
 
     rl.question("Save? (yes/no): ", function (ans) {
       if (
         ans.trim().toLocaleLowerCase() === "yes" ||
         ans.trim().toLocaleLowerCase() === "y"
       ) {
-        let data = res
+        let data = original
           .map((o) => util.inspect(o, { breakLength: Infinity }))
           .join("\n");
         console.log("saving...");

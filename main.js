@@ -24,7 +24,8 @@ function rate(number) {
 // 1594743690690
 async function fetcher(runs) {
   for (let i = 0; i < runs; i++) {
-    console.log("Starting fetch number", i);
+    const idx = i + 1;
+    console.log("FETCH", idx, "starting...");
     fetch(
       `https://webbutik.comviq.se/student/checkout/activationtype/availablePhoneNumbers/?_=${Date.now()}`,
       {
@@ -50,8 +51,12 @@ async function fetcher(runs) {
       .then((json) => json.response)
       .then((arr) => numbers.push(...arr))
       .catch(() => {
-        runs_alive--;
-        console.log(`Another one bites the dust ${runs_alive} left.`);
+        runs_dead++;
+        console.log("FETCH", idx, "died.", `(${runs - runs_dead}`, "alive)");
+      })
+      .finally(() => {
+        runs_done++;
+        console.log("FETCH", idx, "done!", `(${runs - runs_done}`, "left)");
       });
 
     await sleep(500 + Math.floor(Math.random() * 600));
@@ -75,10 +80,10 @@ function compare(a, b) {
   return value(a) - value(b);
 }
 
-function poll(startTime) {
+function poll(runs, startTime, pollingTime) {
   console.log("polling... (" + (Date.now() - startTime) / 1000 + " s)");
 
-  if (numbers.length == runs_alive * 5) {
+  if (numbers.length == (runs - runs_dead) * 5) {
     console.log("Done!");
 
     const res = numbers
@@ -103,7 +108,7 @@ function poll(startTime) {
           .map((o) => util.inspect(o, { breakLength: Infinity }))
           .join("\n");
         console.log("saving...");
-        fs.mkdir("out", function (err) {});
+        fs.mkdir("out", function () {});
         fs.writeFile(`out/${Date.now()}.txt`, data, function (err) {
           if (err) return console.log(err);
         });
@@ -111,19 +116,18 @@ function poll(startTime) {
       rl.close();
     });
   } else {
-    setTimeout(() => poll(startTime), 1000);
+    setTimeout(() => poll(runs, startTime, pollingTime), pollingTime);
   }
 }
 
-var runs_alive;
+var runs_dead = 0;
+var runs_done = 0;
 var numbers = [];
 
 rl.question("Runs (number): ", async function (runsString) {
   const runs = parseInt(runsString) ? parseInt(runsString) : 5;
   const startTime = Date.now();
 
-  runs_alive = runs;
-
   await fetcher(runs);
-  setTimeout(() => poll(startTime), 1000);
+  poll(runs, startTime, 1000);
 });
